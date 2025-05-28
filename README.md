@@ -1,55 +1,132 @@
-# Simple FastAPI Chatbot
+# Supply Chain AI Agent
 
-A simple chatbot application built with FastAPI and a clean, modern UI.
+A modern, full-stack chatbot application for supply chain analytics and document Q&A, built with FastAPI, DuckDB, LangChain, Qdrant, and a beautiful custom UI. The agent can answer questions using both a large supply chain dataset and a library of supply chain policy documents, providing actionable business insights.
+
+---
 
 ## Features
 
-- Real-time chat interface
-- Simple response system
-- Modern and responsive UI
-- Easy to extend and customize
+- **User Authentication**: Secure registration and login system.
+- **Real-Time Chat**: Modern, responsive chat UI with user/AI avatars.
+- **Hybrid Q&A**: Answers questions using both SQL (DuckDB) and document retrieval (Qdrant + LangChain).
+- **Business Analysis**: AI provides actionable, business-focused recommendations.
+- **Document Search**: Upload and index supply chain policy PDFs for semantic search.
+- **Data Analytics**: Query a large supply chain CSV with natural language.
+- **Extensible**: Easily add new documents, data, or response logic.
 
-## Setup
+---
 
-1. Install the required dependencies:
-```bash
-pip install -r requirements.txt
-```
+## Architecture Overview
 
-2. Set your OpenAI API key as an environment variable (recommended) or in a `.env` file:
-```bash
-# .env file (create in project root)
-OPENAI_API_KEY=sk-YOUR_OPENAI_KEY
-```
-Or set it in your shell:
-```bash
-set OPENAI_API_KEY=sk-YOUR_OPENAI_KEY  # Windows
-export OPENAI_API_KEY=sk-YOUR_OPENAI_KEY  # Mac/Linux
-```
+- **Backend**: FastAPI
+  - User/session management (DuckDB)
+  - Chat endpoint: routes questions to SQL, document retrieval, or both
+  - Integrates with Google Gemini API for LLM responses
+  - Uses LangChain for embeddings and Qdrant for vector search
+- **Frontend**: Jinja2 templates + custom HTML/CSS/JS
+  - Responsive, modern chat interface
+  - Login and registration pages
+- **Data**:
+  - `DataCoSupplyChainDataset_UTF8.csv`: Main supply chain dataset (loaded into DuckDB)
+  - `supply_docs/`: Folder of supply chain policy PDFs (indexed for semantic search)
 
-3. Run the application:
-```bash
-uvicorn main:app --reload
-```
+---
 
-4. Open your browser and navigate to `http://localhost:8000`
+## Setup & Installation
+
+1. **Clone the repository**
+
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Set up environment variables**
+   - Create a `.env` file in the project root:
+     ```env
+     GEMINI_API_KEY=your_google_gemini_api_key
+     QDRANT_URL=https://your-qdrant-instance.com
+     QDRANT_API_KEY=your_qdrant_api_key
+     SECRET_KEY=your_random_secret
+     ```
+   - Or set them in your shell.
+
+4. **Prepare the data**
+   - Place your main CSV as `DataCoSupplyChainDataset_UTF8.csv` in the project root.
+   - Place your policy PDFs in the `supply_docs/` folder.
+
+5. **Index the documents**
+   - Run the document loader to embed and index PDFs:
+     ```bash
+     python doc_loader.py
+     ```
+
+6. **Run the application**
+   ```bash
+   uvicorn main:app --reload
+   ```
+   - Open your browser at [http://localhost:8000](http://localhost:8000)
+
+---
 
 ## Usage
 
-- Type your message in the input field
-- Press Enter or click the Send button to send your message
-- The chatbot will respond based on predefined patterns
-- Current supported keywords: "hello", "how are you", "bye"
+- Register a new account or log in.
+- Type your question in the chat (e.g., "What are the top supply chain risks last year?" or "Show me the policy for supplier selection.")
+- The agent will answer using data, documents, or both, and provide business recommendations.
+- All chat history is stored per session.
+
+---
 
 ## Extending the Chatbot
 
-To add more responses, modify the `responses` dictionary in `main.py`. Add new key-value pairs where:
-- Key: The trigger word or phrase
-- Value: The bot's response
+- **Add new documents**: Place new PDFs in `supply_docs/` and re-run `doc_loader.py`.
+- **Change data**: Replace the CSV and restart the app.
+- **Customize prompts/logic**: Edit the main logic in `main.py` (see the `/chat` endpoint for prompt structure and process flow).
+
+---
+
+## File/Folder Structure
+
+```
+├── main.py                # FastAPI backend, chat logic, authentication
+├── doc_loader.py          # Script to index PDFs into Qdrant
+├── del_docs.py            # Script to delete Qdrant collection
+├── requirements.txt       # Python dependencies
+├── DataCoSupplyChainDataset_UTF8.csv  # Main supply chain data
+├── supply_docs/           # Folder of policy PDFs
+├── templates/
+│   ├── chat.html          # Chat UI
+│   ├── login.html         # Login page
+│   └── register.html      # Registration page
+├── static/                # Static assets (CSS, JS)
+├── .env                   # (Not committed) Environment variables
+```
+
+---
 
 ## Technologies Used
 
 - FastAPI
+- DuckDB
+- LangChain & LangChain-Community
+- Qdrant (vector database)
+- HuggingFace Transformers (embeddings)
+- Google Gemini API (LLM)
 - Jinja2 Templates
-- HTML/CSS
-- JavaScript 
+- HTML/CSS/JavaScript
+
+---
+
+## License
+
+MIT License (or specify your own)
+
+---
+
+## Acknowledgements
+
+- [LangChain](https://langchain.com/)
+- [Qdrant](https://qdrant.tech/)
+- [Google Gemini](https://ai.google.dev/)
+- [FastAPI](https://fastapi.tiangolo.com/) 
