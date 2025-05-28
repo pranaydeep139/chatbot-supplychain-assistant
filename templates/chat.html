@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ChatBot</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+          --bg-color: #343541;
+          --chat-bg-color: #40414F; /* Slightly lighter for chat area */
+          --user-msg-bg: #2A2B32; /* Darker, distinct for user */
+          --ai-msg-bg: #444654; /* Similar to ChatGPT's AI messages - though AI message content is transparent now */
+          --input-bg: #40414F;
+          --text-color: #ECECF1;
+          --placeholder-color: #8E8EA0;
+          --border-color: #565869;
+          --button-hover-bg: #202123; /* Darker for button hover */
+          --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          --main-content-max-width: 960px; /* Adjust as needed */
+
+          /* Animation Speeds */
+          --header-transition-duration: 1.2s;
+          --input-transition-duration: 0.3s;
+
+          /* Estimated header heights for positioning calculations */
+          --initial-header-estimated-height: 62px; /* Approximate height of initial large header */
+          --final-header-estimated-height: 54px; /* Approximate height of final smaller header */
+        }
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: var(--font-family);
+          background-color: var(--bg-color);
+          color: var(--text-color);
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          overflow: hidden;
+        }
+
+        /* --- HEADER STYLES --- */
+        #main-header {
+          position: fixed;
+          top: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 100%;
+          max-width: var(--main-content-max-width);
+          background-color: var(--bg-color);
+          color: var(--text-color);
+          padding: 15px 0;
+          text-align: center;
+          font-size: 1.2em;
+          font-weight: normal;
+          border-bottom: 1px solid var(--border-color);
+          border-left: 1px solid var(--border-color);
+          border-right: 1px solid var(--border-color);
+          opacity: 1;
+          z-index: 5;
+          transition-property: font-size, font-weight, padding, transform, opacity, top, max-width, border-color, background-color, border-width;
+          transition-duration: var(--header-transition-duration);
+          transition-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+
+        body.initial-view #main-header {
+          font-size: 2.2em;
+          font-weight: 600;
+          background-color: transparent;
+          border-width: 0px;
+          border-color: transparent;
+          padding: 10px 0;
+          max-width: 90%;
+          /* Adjusted top to be higher, relative to viewport height for centering text effect */
+          top: calc(50vh - var(--initial-header-estimated-height) - 60px); /* Pushes header up from input */
+          opacity: 1;
+          z-index: 11; /* Ensure it's above other elements in initial view */
+        }
+
+        /* --- CHAT AREA --- */
+        #chat-area {
+          flex-grow: 1;
+          overflow-y: auto;
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          background-color: var(--chat-bg-color);
+          width: 100%;
+          max-width: var(--main-content-max-width);
+          margin-left: auto;
+          margin-right: auto;
+          border-left: 1px solid var(--border-color);
+          border-right: 1px solid var(--border-color);
+          opacity: 1;
+          transition: opacity var(--header-transition-duration) ease-in-out calc(var(--input-transition-duration) * 0.8);
+        }
+
+        body:not(.initial-view) #chat-area {
+          /* Adjust padding-top to account for the final header height */
+          padding-top: calc(var(--final-header-estimated-height) + 20px);
+        }
+
+        body.initial-view #chat-area {
+          display: none; /* Hidden in initial view */
+          opacity: 0;
+        }
+
+        #chat-area::-webkit-scrollbar { width: 8px; }
+        #chat-area::-webkit-scrollbar-track { background: var(--bg-color); }
+        #chat-area::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        #chat-area::-webkit-scrollbar-thumb:hover { background: #6b6d7f; }
+
+        /* --- MESSAGES --- */
+        .message {
+          max-width: 85%;
+          padding: 12px 18px;
+          border-radius: 18px;
+          line-height: 1.5;
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          word-wrap: break-word; /* Ensure long words break */
+        }
+
+        .message-avatar {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 0.9em;
+        }
+
+        .message-content {
+          /* white-space: pre-wrap; allows wrapping and respects newlines from template literals.
+             This is good for simple text, but formatPolicyMarkdown will insert <p>, <ul> etc.
+             So, we might not need pre-wrap if HTML structure is well-defined by formatPolicyMarkdown.
+             Let's keep it for now, as it helps with simple text responses that aren't markdown.
+          */
+          white-space: pre-wrap;
+        }
+        
+        .message-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 10px;
+          display: block; /* To remove extra space below image if it's inline */
+          margin-bottom: 8px;
+        }
+
+        .user-message {
+          background-color: var(--user-msg-bg);
+          color: var(--text-color);
+          align-self: flex-end;
+          border-bottom-right-radius: 5px; /* ChatGPT-like tail */
+        }
+
+        .user-message .message-avatar {
+          background-color: #10a37f; /* Example color */
+        }
+         .user-message .message-content {
+            /* User messages are typically plain text, so no special white-space handling needed beyond default */
+         }
+
+
+        .ai-message {
+          background-color: transparent; /* AI messages are transparent, content inside will be styled */
+          color: var(--text-color);
+          align-self: flex-start;
+          border-bottom-left-radius: 5px; /* ChatGPT-like tail */
+        }
+
+        .ai-message .message-avatar {
+          background-color: #8e10a3; /* Example color */
+        }
+
+        /* --- INPUT CONTAINER --- */
+        #input-container {
+          flex-shrink: 0;
+          padding: 15px 0px 25px 0px; /* Top padding creates space, bottom for disclaimer */
+          background: linear-gradient(to top, var(--bg-color) 50%, transparent); /* Fade effect */
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px; /* Space between input wrapper and disclaimer */
+          transition: transform var(--input-transition-duration) ease-in-out,
+                      padding var(--input-transition-duration) ease-in-out,
+                      background var(--input-transition-duration) ease-in-out;
+        }
+        #input-container:not(.initial-input-position) {
+          max-width: var(--main-content-max-width);
+          margin-left: auto;
+          margin-right: auto;
+          border-left: 1px solid var(--border-color); /* Match chat area border */
+          border-right: 1px solid var(--border-color); /* Match chat area border */
+        }
+
+
+        #input-container.initial-input-position {
+          position: fixed;
+          bottom: 50%; /* Start from vertical center */
+          left: 50%;
+          transform: translate(-50%, 50%); /* Adjust to truly center input bar */
+          background: transparent; /* No gradient initially */
+          padding: 0; /* No extra padding initially */
+          z-index: 10;
+          transition-property: transform, padding, background-color, bottom, left;
+          transition-duration: var(--input-transition-duration);
+          transition-timing-function: ease-in-out;
+        }
+
+        .input-wrapper {
+          position: relative; /* For send button positioning */
+          display: flex;
+          align-items: center;
+          width: 100%;
+          max-width: 700px; /* Max width of the input field itself */
+          padding: 0 20px; /* Side padding for the wrapper within #input-container */
+        }
+        
+        #input-container.initial-input-position .input-wrapper {
+            background-color: var(--input-bg); /* Give a background when centered */
+            padding: 10px; /* Padding inside the rounded box */
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+
+        #user-input {
+          flex-grow: 1;
+          padding: 14px 50px 14px 18px; /* Right padding for send button */
+          border-radius: 12px;
+          border: 1px solid var(--border-color);
+          background-color: var(--input-bg);
+          color: var(--text-color);
+          font-size: 1em;
+          outline: none;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+        }
+        
+        #input-container.initial-input-position #user-input {
+            box-shadow: none; /* No inner shadow when centered */
+            border: none; /* No border when centered, relies on wrapper */
+        }
+
+        #user-input:focus {
+          border-color: #777; /* Highlight on focus */
+        }
+        
+        #input-container:not(.initial-input-position) #user-input:focus {
+           border-color: #777; /* Consistent focus highlight */
+        }
+
+        #user-input::placeholder {
+          color: var(--placeholder-color);
+        }
+
+        #send-button {
+          position: absolute;
+          right: 20px; /* Default position from right edge of .input-wrapper */
+          top: 50%;
+          transform: translateY(-50%);
+          background-color: transparent;
+          color: var(--placeholder-color); /* Default icon color */
+          border: none;
+          border-radius: 8px;
+          padding: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 10px; /* Small margin from the very edge of input field padding */
+        }
+        
+        #input-container.initial-input-position #send-button {
+            right: 10px; /* Adjust position when input is centered */
+        }
+
+        #user-input:not(:placeholder-shown) + #send-button,
+        #user-input:focus + #send-button {
+          color: var(--text-color); /* Change icon color when input has text or focus */
+        }
+
+        #send-button:hover {
+          background-color: var(--button-hover-bg);
+        }
+
+        .send-icon { /* SVG stroke is currentColor, so color on button works */ }
+
+        /* --- FOOTER DISCLAIMER --- */
+        .footer-disclaimer {
+          font-size: 0.75em;
+          color: var(--placeholder-color);
+          text-align: center;
+          margin-top: 5px; /* Space above disclaimer */
+          display: none; /* Hidden by default */
+          opacity: 0;
+          transition: opacity var(--header-transition-duration) ease-in-out calc(var(--input-transition-duration) * 0.9);
+        }
+
+        body:not(.initial-view) #input-container:not(.initial-input-position) .footer-disclaimer {
+            display: block;
+            opacity: 1;
+        }
+
+        /* --- CHART STYLES --- */
+        .message-content .chart-container {
+          width: 100%;
+          max-width: 500px; /* Max width of chart */
+          height: 300px;    /* Fixed height for chart */
+          margin-top: 10px;
+          margin-bottom: 8px;
+          background-color: var(--chat-bg-color); /* Or a slightly different shade for contrast */
+          padding: 5px;
+          border-radius: 8px;
+        }
+
+        .message-content .chart-container canvas {
+          max-width: 100%;
+          max-height: 100%;
+        }
+        
+        /* --- POLICY CONTENT STYLES (FOR MARKDOWN PARSING) --- */
+        /* Headings within AI message content */
+        .ai-message .message-content h4 {
+          margin-top: 1.2em; 
+          margin-bottom: 0.6em; 
+          font-size: 1.1em; 
+          font-weight: 600;
+          color: var(--text-color); /* Ensure headings have text color */
+        }
+
+        /* The div wrapping content under a heading */
+        .ai-message .message-content .policy-section-content {
+          margin-left: 20px; /* Indent for the content block */
+        }
+        
+        /* Content that might appear before the first h4 */
+        .ai-message .message-content .default-initial-section {
+            /* margin-left is inherited if it's also a .policy-section-content.
+               If it's just text directly in .message-content before any h4,
+               it won't have this margin unless .message-content itself has padding.
+               The current formatPolicyMarkdown wraps even initial content.
+            */
+        }
+
+        /* Paragraphs within a policy section */
+        .ai-message .message-content .policy-section-content > p {
+          margin-bottom: 0.8em; 
+          line-height: 1.6;
+          color: var(--text-color); /* Ensure paragraph text color */
+        }
+        .ai-message .message-content .policy-section-content > p:first-child {
+          margin-top: 0; /* No top margin for first paragraph in a section */
+        }
+        .ai-message .message-content .policy-section-content > p:not(:first-child) {
+          margin-top: 0.6em;
+        }
+
+
+        /* Lists within a policy section */
+        .ai-message .message-content .policy-section-content > ul {
+          margin-bottom: 0.8em; 
+          padding-left: 20px;   /* Standard list indent */
+          color: var(--text-color); /* Ensure list text color */
+        }
+        .ai-message .message-content .policy-section-content > ul:first-child {
+          margin-top: 0; /* No top margin for first list in a section */
+        }
+        .ai-message .message-content .policy-section-content > ul:not(:first-child) {
+          margin-top: 0.6em;
+        }
+        
+        /* Nested lists */
+        .ai-message .message-content ul ul {
+          margin-top: 0.2em;
+          margin-bottom: 0.2em;
+          /* padding-left will be default or can be added */
+        }
+
+        /* List items */
+        .ai-message .message-content li {
+          margin-bottom: 0.4em; 
+          line-height: 1.5;
+        }
+
+        /* General paragraph styling for AI messages if not in a policy section
+           (e.g., simple text responses not processed by formatPolicyMarkdown's section logic)
+           This ensures simple string responses from backend are also styled.
+        */
+        .ai-message .message-content > p {
+            margin-top: 0;
+            margin-bottom: 0.8em;
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+        /* Bolding and italics from markdown should be respected by <strong> and <em> tags */
+        .ai-message .message-content strong {
+            font-weight: 600; /* Or bold, depending on font */
+        }
+        .ai-message .message-content em {
+            font-style: italic;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header id="main-header">Supply Chain Support Agent</header>
+
+    <div id="chat-area">
+        <!-- Messages will be appended here by JavaScript -->
+    </div>
+
+    <footer id="input-container" class="initial-input-position">
+        <div class="input-wrapper">
+            <input type="text" id="user-input" placeholder="Type your message..." />
+            <button id="send-button" aria-label="Send message">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="send-icon">
+                    <path d="M7 11L12 6L17 11M12 18V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </button>
+        </div>
+        <p class="footer-disclaimer">AI responses may be fictional or inaccurate. Verify important information.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedRole = localStorage.getItem('aiAgentRole');
+            const storedUser = localStorage.getItem('aiAgentUser');
+
+            if (!storedRole || !storedUser) {
+                console.warn('User role or name not found in localStorage. Login might be required for full functionality in a deployed environment.');
+                // alert('You are not logged in. Redirecting to login page.'); // Example redirect
+                // window.location.href = '/'; // Redirect to root (login.html)
+                // return; // Stop further execution if redirecting
+            } else {
+                console.log(`User: ${storedUser}, Role: ${storedRole} - localStorage check passed.`);
+            }
+
+            const chatArea = document.getElementById('chat-area');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const inputContainer = document.getElementById('input-container');
+            const body = document.body;
+            const mainHeader = document.getElementById('main-header');
+
+            let isFirstInteraction = true;
+            const chartTextColor = '#ECECF1'; // For chart label colors, matches general text
+
+            function initializeChatLayout() {
+                body.classList.add('initial-view');
+                userInput.focus();
+            }
+
+            function transitionToFullChatView() {
+                if (body.classList.contains('initial-view')) {
+                    body.classList.remove('initial-view');
+                }
+                if (inputContainer.classList.contains('initial-input-position')) {
+                    inputContainer.classList.remove('initial-input-position');
+                }
+                 // Ensure chat area is visible after transition
+                chatArea.style.display = 'flex'; 
+                setTimeout(() => { // Allow layout to reflow
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                }, 0);
+            }
+
+            function formatPolicyMarkdown(mdText) {
+                if (typeof mdText !== 'string') return mdText; // Return as is if not a string
+
+                let htmlPreProcess = mdText.trim();
+
+                // 1. Headers: **Header Text** (on its own line, no colon) -> <h4>Header Text</h4>
+                htmlPreProcess = htmlPreProcess.replace(/^\s*\*\*(?!.*:)(.+?)\*\*\s*$/gm, (match, content) => `<h4>${content.trim()}</h4>`);
+
+                const lines = htmlPreProcess.split('\n');
+                const newHtmlLines = [];
+                let inList = false;
+                let listIndentLevel = 0; // 0 for top-level, 1 for nested
+                let inPolicySectionDiv = false;
+
+                for (const line of lines) {
+                    let currentLineContent = "";
+                    const trimmedLine = line.trim();
+
+                    if (!trimmedLine) continue; // Skip empty lines
+
+                    if (trimmedLine.startsWith('<h4>') && trimmedLine.endsWith('</h4>')) {
+                        if (inList) {
+                            if (listIndentLevel > 0) newHtmlLines.push('</ul>');
+                            newHtmlLines.push('</ul>');
+                            inList = false;
+                            listIndentLevel = 0;
+                        }
+                        if (inPolicySectionDiv) {
+                            newHtmlLines.push('</div>'); 
+                        }
+                        newHtmlLines.push(trimmedLine);
+                        newHtmlLines.push('<div class="policy-section-content">');
+                        inPolicySectionDiv = true;
+                        continue;
+                    }
+
+                    if (!inPolicySectionDiv && trimmedLine) {
+                        newHtmlLines.push('<div class="policy-section-content default-initial-section">');
+                        inPolicySectionDiv = true;
+                    }
+                    
+                    let isListItem = false;
+                    let currentItemIndentLevel = 0;
+                    
+                    if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+                        isListItem = true;
+                        const markerUsed = trimmedLine.charAt(0);
+                        const indentMatch = line.match(/^(\s+)[-*]\s/);
+                        if (indentMatch) {
+                            const indentChars = indentMatch[1];
+                            if (indentChars.includes('\t') || indentChars.length >= 2) {
+                                currentItemIndentLevel = 1;
+                            }
+                        }
+                        currentLineContent = trimmedLine.substring(trimmedLine.indexOf(markerUsed + " ") + 2).trim();
+                    } else {
+                        currentLineContent = trimmedLine;
+                    }
+
+                    // Inline markdown: **BoldLabel:**, *italic*, **bold**
+                    // Specific bold labels (like "Policy:")
+                    currentLineContent = currentLineContent.replace(/\*\*(Policy|Why it's important|Actionable Steps|Track completion|Schedule timely refreshers|Ensure all employees are enrolled|Key Trends and Insights|Strategic Actions and Next Steps|Data Interpretation|Overall Revenue Generation|Missing Context is Critical|Summary):\*\*/g, '<strong>$1:</strong>');
+                    // General italics: *text* (not part of **text**)
+                    currentLineContent = currentLineContent.replace(/(?<!\*)\*([^* \n][^*]*?[^* \n])\*(?!\*)/g, '<em>$1</em>');
+                    // General bold: **text** (applied last to catch remaining)
+                    currentLineContent = currentLineContent.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+
+                    if (isListItem) {
+                        if (!inList) {
+                            newHtmlLines.push(currentItemIndentLevel > 0 ? '<ul><ul>' : '<ul>');
+                            inList = true;
+                            listIndentLevel = currentItemIndentLevel;
+                        } else {
+                            if (currentItemIndentLevel > listIndentLevel) {
+                                newHtmlLines.push('<ul>');
+                                listIndentLevel = currentItemIndentLevel;
+                            } else if (currentItemIndentLevel < listIndentLevel) {
+                                newHtmlLines.push('</ul>');
+                                listIndentLevel = currentItemIndentLevel;
+                            }
+                        }
+                        newHtmlLines.push(`<li>${currentLineContent}</li>`);
+                    } else {
+                        if (inList) {
+                            if (listIndentLevel > 0) newHtmlLines.push('</ul>');
+                            newHtmlLines.push('</ul>');
+                            inList = false;
+                            listIndentLevel = 0;
+                        }
+                        if (currentLineContent) {
+                            newHtmlLines.push(`<p>${currentLineContent}</p>`);
+                        }
+                    }
+                }
+
+                if (inList) {
+                    if (listIndentLevel > 0) newHtmlLines.push('</ul>');
+                    newHtmlLines.push('</ul>');
+                }
+                if (inPolicySectionDiv) {
+                    newHtmlLines.push('</div>');
+                }
+
+                return newHtmlLines.join('\n');
+            }
+
+            function addMessageToChat(content, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+
+                const avatarDiv = document.createElement('div');
+                avatarDiv.classList.add('message-avatar');
+
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('message-content');
+
+                if (sender === 'user') {
+                    messageDiv.classList.add('user-message');
+                    avatarDiv.textContent = 'U'; // Or dynamically set based on storedUser
+                    contentDiv.textContent = content; // User messages are plain text
+                    messageDiv.appendChild(contentDiv); // Content first for user
+                    messageDiv.appendChild(avatarDiv);
+                } else { // AI message
+                    messageDiv.classList.add('ai-message');
+                    avatarDiv.textContent = 'AI';
+
+                    if (typeof content === 'object' && content !== null && content.type === 'image_with_text') {
+                        const img = document.createElement('img');
+                        img.src = content.imageUrl;
+                        img.alt = content.text || "AI Generated Image";
+                        img.onload = () => scrollToBottom(); // Scroll after image loads
+                        const textBelowImage = document.createElement('p');
+                        textBelowImage.textContent = content.text;
+                        contentDiv.appendChild(img);
+                        contentDiv.appendChild(textBelowImage);
+                    } else if (typeof content === 'object' && content !== null && content.type === 'chart') {
+                        if (content.text) {
+                            const chartText = document.createElement('p');
+                            chartText.textContent = content.text;
+                            contentDiv.appendChild(chartText);
+                        }
+                        const chartContainer = document.createElement('div');
+                        chartContainer.classList.add('chart-container');
+                        const canvas = document.createElement('canvas');
+                        chartContainer.appendChild(canvas);
+                        contentDiv.appendChild(chartContainer);
+                        // Ensure chart renders after DOM update
+                        setTimeout(() => {
+                            if (canvas.getContext && Chart) {
+                                new Chart(canvas, content.chartConfig);
+                                scrollToBottom(); // Scroll after chart renders
+                            } else {
+                                console.error("Chart.js or canvas context not available");
+                            }
+                        }, 0);
+                    } else { // Simple text or markdown AI message
+                        contentDiv.innerHTML = formatPolicyMarkdown(content);
+                    }
+                    messageDiv.appendChild(avatarDiv); // Avatar first for AI
+                    messageDiv.appendChild(contentDiv);
+                }
+
+                chatArea.appendChild(messageDiv);
+                scrollToBottom();
+            }
+            
+            function scrollToBottom() {
+                if (getComputedStyle(chatArea).display !== 'none') {
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                }
+            }
+
+            async function handleUserSubmit() {
+                const messageText = userInput.value.trim();
+                if (messageText === '') return;
+
+                if (isFirstInteraction) {
+                    transitionToFullChatView();
+                    isFirstInteraction = false;
+                }
+
+                addMessageToChat(messageText, 'user');
+                userInput.value = '';
+                userInput.focus();
+                
+                // Don't scroll here, fetchBotResponse will scroll after AI response
+                await fetchBotResponse(messageText);
+            }
+
+            async function fetchBotResponse(message) {
+                const formData = new FormData();
+                formData.append('message', message);
+
+                // Optional: Add a "Bot is typing..." message
+                // const typingMessage = addMessageToChat("AI is thinking...", 'ai'); // Needs specific handling in addMessageToChat or a dedicated function
+
+                try {
+                    const response = await fetch('/chat', { // Your backend endpoint
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    // if (typingMessage) chatArea.removeChild(typingMessage); // Remove typing indicator
+
+                    if (!response.ok) {
+                        let errorMessage = `Sorry, there was a server error (Status: ${response.status}).`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.response || errorData.error || errorData.message || errorMessage;
+                        } catch (e) {
+                            // If parsing error JSON fails, use the generic message or try to get text
+                            const errorText = await response.text().catch(() => "");
+                            if (errorText && errorText.length < 200) errorMessage = errorText; // Show short text errors
+                            console.error('Error response from server was not valid JSON:', errorText);
+                        }
+                        addMessageToChat(errorMessage, 'ai');
+                        return;
+                    }
+
+                    const data = await response.json();
+                    // Assuming your backend sends: { "response": "The bot's textual answer" }
+                    // Or { "response": { type: "chart", ... } } or { type: "image_with_text", ... }
+                    addMessageToChat(data.response, 'ai');
+
+                } catch (error) {
+                    // if (typingMessage) chatArea.removeChild(typingMessage); // Ensure removal on error
+                    console.error('Error sending/receiving message:', error);
+                    addMessageToChat('Sorry, there was an issue connecting to the bot. Please check the console.', 'ai');
+                }
+                // Scrolling is handled by addMessageToChat or explicitly after it
+            }
+
+            sendButton.addEventListener('click', handleUserSubmit);
+            userInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    handleUserSubmit();
+                }
+            });
+
+            initializeChatLayout();
+
+            // Example welcome message or initial message from bot (optional)
+            // setTimeout(() => {
+            //     if (isFirstInteraction) { // Only if no user interaction yet
+            //          addMessageToChat("Hello! I am your Supply Chain Support Agent. How can I assist you today?", 'ai');
+            //     }
+            // }, 1500); // Delay to allow UI to settle
+
+        });
+    </script>
+</body>
+</html>

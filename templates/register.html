@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Supply Chain Agent</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #333;
+        }
+        .auth-container {
+            background-color: #ffffff;
+            padding: 35px 45px;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        .auth-container h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 2em;
+            font-weight: 600;
+        }
+        .auth-container .tagline {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+        .auth-container form {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .form-group input[type="text"]:focus,
+        .form-group input[type="password"]:focus {
+            border-color: #28a745; /* Green for registration theme */
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+            outline: none;
+        }
+        .auth-container button[type="submit"] {
+            background-color: #28a745; /* Green button */
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-weight: 500;
+            transition: background-color 0.2s ease-in-out;
+            margin-top: 10px;
+        }
+        .auth-container button[type="submit"]:hover {
+            background-color: #1e7e34; /* Darker green */
+        }
+        .auth-container .switch-link {
+            margin-top: 25px;
+            font-size: 0.9em;
+        }
+        .auth-container .switch-link a {
+            color: #007bff; /* Blue link for consistency */
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .auth-container .switch-link a:hover {
+            text-decoration: underline;
+        }
+        /* Placeholder for messages from backend */
+        .message-area {
+            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            text-align: left;
+        }
+        .message-area.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message-area.success { /* e.g., for "Registration successful, please login" */
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+  <div class="auth-container">
+    <h1>Create Account</h1>
+    <p class="tagline">Join the Supply Chain Agent platform.</p>
+
+    <!--
+      Backend Message Placeholder:
+      If your backend sends an error message (e.g., "Username already taken"),
+      you can display it here.
+      <div class="message-area error">{{ error_message }}</div>
+      or for success:
+      <div class="message-area success">{{ success_message }}</div>
+    -->
+    <!-- <div class="message-area error">Example: Username already exists.</div> -->
+
+    <form method="post" action="/register"> <!-- Ensure action="/register" if your routes expect it -->
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required />
+      </div>
+      <!-- Optional: Add a "Confirm Password" field for better UX,
+           but backend validation is key.
+      <div class="form-group">
+        <label for="confirm_password">Confirm Password:</label>
+        <input type="password" id="confirm_password" name="confirm_password" required />
+      </div>
+      -->
+      <button type="submit">Register</button>
+    </form>
+    <p class="switch-link">
+      Already have an account? <a href="/login">Login here</a>
+    </p>
+  </div>
+</body>
+</html>

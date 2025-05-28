@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Supply Chain Agent</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #333;
+        }
+        .auth-container {
+            background-color: #ffffff;
+            padding: 35px 45px;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        .auth-container h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 2em;
+            font-weight: 600;
+        }
+        .auth-container .tagline {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+        .auth-container form {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .form-group input[type="text"]:focus,
+        .form-group input[type="password"]:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        .auth-container button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-weight: 500;
+            transition: background-color 0.2s ease-in-out;
+            margin-top: 10px;
+        }
+        .auth-container button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        .auth-container .switch-link {
+            margin-top: 25px;
+            font-size: 0.9em;
+        }
+        .auth-container .switch-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .auth-container .switch-link a:hover {
+            text-decoration: underline;
+        }
+        /* Placeholder for messages from backend */
+        .message-area {
+            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            text-align: left;
+        }
+        .message-area.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message-area.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+  <div class="auth-container">
+    <h1>Login</h1>
+    <p class="tagline">Access your Supply Chain Agent dashboard.</p>
+
+    <!--
+      Backend Message Placeholder:
+      If your backend sends an error message (e.g., via a templating engine),
+      you can display it here. Example:
+      <div class="message-area error">{{ error_message }}</div>
+      or if no error:
+      <div></div>
+    -->
+    <!-- <div class="message-area error">Example: Invalid username or password.</div> -->
+
+
+    <form method="post" action="/login"> <!-- Ensure action="/login" if your routes expect it -->
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required />
+      </div>
+      <button type="submit">Login</button>
+    </form>
+    <p class="switch-link">
+      Don’t have an account? <a href="/register">Register here</a>
+    </p>
+  </div>
+</body>
+</html>
